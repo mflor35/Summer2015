@@ -17,3 +17,4 @@ for t in frange(delta_time,number_of_samples * delta_time,delta_time):
 
 for voltage in x:
     print voltage
+

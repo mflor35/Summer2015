@@ -13,26 +13,16 @@ the transmitter file will transmit the voltage, followed by the frequency
 from xbee import XBee
 import serial
 from time import sleep
-voltage_output = open('voltage_output.txt', 'w')
-voltage_output.close()
-frequency_output = open('frequency_output.txt', 'w')
-frequency_output.close()
+tweetawatt = open('tweetawatt_data.txt', 'w')
+#Change serial port to COM1,COM2... when running this script on a Windows machine.
 ser = serial.Serial('/dev/ttyUSB0', 9600)
 xbee = XBee(ser)
 i = 0 #counter for the response (assuming odd is voltage and even is frequency)
 while True:
     try:
         sleep(2)
-        voltage_output = open('voltage_output.txt', 'a')
-        frequency_output = open('frequency_output.txt', 'a')
         response = xbee.wait_read_frame()
-        i+=1
-        if i%2==1: # If odd line (voltage measurement)
-            voltage_output.write(str(response)+"\n")
-        else: #If even line (frequency measurement)
-            frequency_output.write(str(response)+"\n")
-        voltage_output.close()
-        frequency_output.close()
+        tweetawatt.write(str(response)+"\n")
     except KeyboardInterrupt:
         break
 ser.close()

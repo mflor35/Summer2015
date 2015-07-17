@@ -1,3 +1,0 @@
-readings = file.open("original_frequency_outpu")
-for line in readings:
-    print line

@@ -1,3 +1,5 @@
+'''Reads input from xbees - not used anymore and replaced by xbees_with_file_output'''
+
 from xbee import XBee
 import serial
 

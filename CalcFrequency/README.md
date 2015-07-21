@@ -4,12 +4,13 @@ The scripts  here are an attempt to understand the different ways to calculate t
 Matlab files are borrowed from this instructable project http://www.instructables.com/id/Power-System-Frequency-Determination-using-Arduino/
 
 The focus was in the the following algorithms:
-1. - MOORE, CARRANZA AND JOHNS, “A numeric technique for quick
+
+1. -MOORE, CARRANZA AND JOHNS, “A numeric technique for quick
 evaluation of frequency”, IEE Proc. Gener. Transm. Distib., Vol.141, No.5, Sept
 1994, pp 529-536MOORE, CARRANZA AND JOHNS, “A numeric technique for quick
 evaluation of frequency”
 
-2. -[1] AGHAZADEH, LESANI, SANAYE-PRASAD AND GANJI, “New technique
+2. -AGHAZADEH, LESANI, SANAYE-PRASAD AND GANJI, “New technique
 for frequency & amplitude estimation of power system signals”, IEE Proc. Gener.
 Transm. Distib., Vol.152, No.3, May 2005, pp 435-440
 

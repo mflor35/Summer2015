@@ -3,7 +3,7 @@ Basics on how to use this file:
 ### Files to use:
  1. - __state_detector.py__ takes in rawdata2.txt (not given - use any raw data) and returns whether the load is on or off based on amplitude of the current wave. The file prints the data and so needs to be redirected into the file fridgestate2.csv. Output is in the form of timestamp, ON/OFF, delta (max-min)
  
- 2. - __state_analysis.py__ takes in fridgestate2.csv and returns only the times where the state changes from ON to OFF or OFF to ON. The file prints the data and so needs to be redirected into the file state_analysis.txt. Output is in the form of [timestamp of state change, amount of time ON in cycle, amount of time between ON cycles]. The averages of the second and third part of the list (which is commented out) can be divided to give the duty cycle as a decimal.
+ 2. - __state_analysis.py__ takes in fridgestate2.csv and returns only the times where the state changes from ON to OFF or OFF to ON. The file prints the data and so needs to be redirected into the file state_analysis.txt. Output is in the form of ** timestamp of state change, amount of time ON in cycle, amount of time between ON cycles **. The averages of the second and third part of the list (which is commented out) can be divided to give the duty cycle as a decimal.
  
  3. - __graph_state_analysis.py__ takes in state_analysis.txt file and graphs the data. This is specifically for the data collected from 07/16/2015 to 07/21/2015 but can be modified for future graphs. 
 

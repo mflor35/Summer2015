@@ -7,6 +7,8 @@ Basics on how to use this file:
 
 ## Extra information/files:
 __graph_data.py__ takes in rawdata.txt (can be replaced with any raw data file) and normalizes the voltage and current data based on the method used at https://learn.adafruit.com/tweet-a-watt/design-listen (link given in file as well) and graphs the result.
+
 __graph_frequency_voltage.py__ takes in frequency and voltage data and graphs it. This is a preliminary code experimenting with graphing with time. It will not be used for its code but can be helpful in dealing with time for graphs
+
 __graphing_data_visualization.py__ = takes in sunlight, power, and energy information to create several graphs. This also was designed as an experiment with graphing and though will not be used as a program for the project, it contains useful code that helps in graphing (especially formatting).
 

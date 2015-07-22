@@ -3,11 +3,9 @@
 import ast
 import matplotlib.pyplot as plt
 from time import sleep
-"""normalizeData takes in analog readings of the  current(adc-4) and the volatage(adc-0).
-It also takes in the sensorAddr(source_addr) simply to keep track where is the data comming from
-
-@voltage:  a list of 19 analog readings [672, 801, 864, 860, 755, 607, 419, 242, 143, 108, 143, 253, 433, 623, 760, 848, 871, 811]
-@current:  a list of 19 analog readings [492, 492, 510, 491, 492, 491, 491, 491, 492, 480, 492, 492, 492, 492, 492, 492, 497, 492]"""
+"""state_detector.py: this script reads a raw data file (python dictionaries of XBee frames)
+and determines from the electric current whether an applianc is off or on. Currently this script
+is ony tuned to analyze data from our test refrigerator/tweet-a-watt"""
 __authors__ = ["Miguel Flores Silverio (miguelflores6182@stuent.hartnell.edu)"]
 __author__ = ', '.join(__authors__)
 __copyright__ = """Copyright © 2015 The Regents of the University of California 
@@ -36,6 +34,14 @@ modification, are permitted provided that the following conditions are met:
      CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY,
      OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
      OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE."""
+"""
+normalizeData takes in analog readings of the  current(adc-4) and the volatage(adc-0).
+It also takes in the sensorAddr(source_addr) simply to keep track where is the data comming from
+
+@voltage:  a list of 19 analog readings [672, 801, 864, 860, 755, 607, 419, 242, 143, 108, 143, 253, 433, 623, 760, 848, 871, 811]
+@current:  a list of 19 analog readings [492, 492, 510, 491, 492, 491, 491, 491, 492, 480, 492, 492, 492, 492, 492, 492, 497, 492]
+
+"""
 def normalizeData(voltage,current):
     # Normalize the curve to zero
     # From and more at Adafruit design https://learn.adafruit.com/tweet-a-watt/design-listen

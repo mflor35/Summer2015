@@ -3,14 +3,16 @@
 import ast
 import matplotlib.pyplot as plt
 from time import sleep
-"""normalizeData takes in analog readings of the  current(adc-4) and the volatage(adc-0).
+"""
+normalizeData takes in analog readings of the  current(adc-4) and the volatage(adc-0).
 It also takes in the sensorAddr(source_addr) simply to keep track where is the data comming from
 
 @voltage:  a list of 19 analog readings [672, 801, 864, 860, 755, 607, 419, 242, 143, 108, 143, 253, 433, 623, 760, 848, 871, 811]
-@current:  a list of 19 analog readings [492, 492, 510, 491, 492, 491, 491, 491, 492, 480, 492, 492, 492, 492, 492, 492, 497, 492]"""
+@current:  a list of 19 analog readings [492, 492, 510, 491, 492, 491, 491, 491, 492, 480, 492, 492, 492, 492, 492, 492, 497, 492]
+"""
 __authors__ = ["Miguel Flores Silverio (miguelflores6182@stuent.hartnell.edu)"]
 __author__ = ', '.join(__authors__)
-__copyright__ = """Copyright © 2015 The Regents of the University of California 
+__copyright__ = """Copyright © 2015 The Regents of the University of California
 All Rights Reserved"""
 __credits__ = ["Zachary Graham", "Kapil Sinha", "Miguel Flores Silverio", "Andres Aranda"]
 __status__ = "prototype"
@@ -23,8 +25,8 @@ modification, are permitted provided that the following conditions are met:
     * Redistributions in binary form must reproduce the above copyright notice,
       this list of conditions and the following disclaimer in the documentation
       and/or other materials provided with the distribution.
-     * Neither the name of Center for Sustainable Energy and Power Systems nor 
-       the names of its contributors may be used to endorse or promote products 
+     * Neither the name of Center for Sustainable Energy and Power Systems nor
+       the names of its contributors may be used to endorse or promote products
        derived from this software without specific prior written permission.
      THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
      AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
@@ -42,7 +44,7 @@ def normalizeData(voltage,current):
 
     MAINSVPP = 164 * 2 # +-164V
     VREF = 498         # Hardcoded 'DC bias' value its about 492
-    CURRENTNORM = 15.5 # Normalizing constant that converts the analog reading to Amperes
+    CURRENTNORM = 16.0 # Normalizing constant that converts the analog reading to Amperes
 
     min_v = 1024       # XBee ADC is 10 bits, so max value is 1023
     max_v = 0
@@ -72,7 +74,7 @@ def normalizeData(voltage,current):
     return voltage,current
 def main():
     #filepath = raw_input("Enter name of data file or path where it is located: ")
-    data = open("data_sample/rawdata1.txt")
+    data = open("/home/chronos/data_files/typicalLoadTest/typicalLoadTest-2.txt")
     plt.ion()
     fig,ax1 = plt.subplots()
     ax2 = plt.twinx()
@@ -84,19 +86,27 @@ def main():
         ax2.cla()
         try:
             reading = ast.literal_eval(reading)
-            sensorAddr = reading['source_addr']
+            #sensorAddr = reading['source_addr']
             for sample in reading['samples']:
                 adc0.append(sample['adc-0'])
                 adc4.append(sample['adc-4'])
-            voltage,current = normalizeData(adc0,adc4)
-            print voltage
+            voltage,current = normalizeData(adc0[3:],adc4[3:])
+            print
+            print "----Voltage----"
+            print "min:",min(voltage)
+            print "max:",max(voltage)
+            print "----Current----"
+            print "min:",min(current)
+            print "max:",max(current)
+
             ax1.plot(voltage,'r')
             ax1.set_xlabel("Sample #")
             ax1.set_ylabel("Voltage")
             ax2.plot(current,'b')
             ax2.set_ylabel("Current")
+            ax2.set_ylim(-1.2,1.2)
             sleep(1)
             plt.draw()
-        except KeyboardInterrupt:
-            break
+        except:
+            pass
 main()

@@ -37,24 +37,24 @@ modification, are permitted provided that the following conditions are met:
      CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY,
      OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
      OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE."""
-def graphit(voltage,current,sensorAddr):
+def updateGraph(current,voltage,graph):
+    graphVoltage = graph.add_subplot(111)
+    graphCurrent = graphVoltage.twinx()
+    graphVoltage.plot(voltage,'r')
+    graphCurrent.plot(current,'b')
+    graphVoltage.set_xlabel("Sample")
+    graphVoltage.set_ylabel("Voltage")
+    graphCurrent.set_ylabel("Current")
+    graphCurrent.set_ylim(-1.2,1.2)
+    graph.canvas.draw()
+    graphCurrent.cla()
+    graphVoltage.cla()
+
+def createGraph(sensorID):
     plt.ion()
-    fig,ax1 = plt.subplots()
-    ax2 = plt.twinx()
-    print
-    print "----Voltage----"
-    print "min:",min(voltage)
-    print "max:",max(voltage)
-    print "----Current----"
-    print "min:",min(current)
-    print "max:",max(current)
-    ax1.plot(voltage,'r')
-    ax1.set_xlabel("Sample #")
-    ax1.set_ylabel("Voltage")
-    ax2.plot(current,'b')
-    ax2.set_ylabel("Current")
-    ax2.set_ylim(-1.2,1.2)
-    plt.draw()
+    graph = plt.figure()
+    graph.suptitle(sensorID,fontsize=12,fontweight='bold')
+    return graph,sensorID
 
 def getAnalogData(reading):
     reading = eval(reading)
@@ -96,10 +96,22 @@ def normalizeData(voltage,current):
     return voltage,current
 def main():
     #filepath = raw_input("Enter name of data file or path where it is located: ")
-    data = open("/home/chronos/data_files/typicalLoadTest/typicalLoadTest.txt")
+    data = open("/home/chronos/testData.txt")
+    listSensors = []
+    listGraphs = []
     for line in data:
-        adc0, adc4, sensor = getAnalogData(line)
-        volatage, current = normalizeData(adc0,adc4)
-        sleep(5)
-        graphit(volatage,current,sensor)
+        adc0, adc4, sensorID = getAnalogData(line)
+        voltage, current = normalizeData(adc0,adc4)
+        if sensorID not in listSensors:
+            print "Sensor not in the list. Adding sensor"
+            listSensors.append(sensorID)
+            graph,graphID = createGraph(sensorID)
+            listGraphs.append((graph,sensorID))
+        else:
+            sleep(1)
+            print "Sensor Already in list. Should be updating graph"
+            for graph in listGraphs:
+                if(graph[1] == sensorID):
+                    updateGraph(current,voltage,graph[0])
+
 main()

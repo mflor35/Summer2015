@@ -1,6 +1,6 @@
 import numpy as np
 calibrationData = []
-fileName = open("/home/chronos/data_files/typicalLoadTest/typicalLoadTest-1.txt")
+fileName = open("/home/chronos/Documents/Summer2015/Internship/Code/Summer2015/WirelessCommunication/tweetawatt3.txt")
 #sensorData = open("home/chronos/data_files/vrefs.txt",'w')
 
 for line in fileName:
@@ -13,5 +13,5 @@ for line in fileName:
         adc4.append(sample['adc-4'])
         np.mean(adc4)
 
-    calibrationData[sensorId] += np.mean(adc4)
-print calibrationData
+    calibrationData.append(np.mean(adc4))
+print np.mean(calibrationData)

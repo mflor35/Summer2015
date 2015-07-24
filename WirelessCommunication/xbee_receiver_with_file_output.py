@@ -10,7 +10,7 @@ Receives the packets from the xbee transmitter and writes the raw dictionary res
 
 from xbee import XBee
 import serial
-tweetawatt = open('tweetawatt_data.txt', 'w')
+tweetawatt = open('tweetawatt3.txt', 'w')
 #Change serial port to COM1,COM2... when running this script on a Windows machine.
 ser = serial.Serial('/dev/ttyUSB0', 9600)
 xbee = XBee(ser)

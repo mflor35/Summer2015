@@ -1,6 +1,5 @@
 #! /usr/bin/env python2.7
 # -*- coding: utf-8 -*-
-import ast
 import matplotlib.pyplot as plt
 from time import sleep
 """
@@ -38,35 +37,58 @@ modification, are permitted provided that the following conditions are met:
      CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY,
      OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
      OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE."""
+def graphit(voltage,current,sensorAddr):
+    plt.ion()
+    fig,ax1 = plt.subplots()
+    ax2 = plt.twinx()
+    print
+    print "----Voltage----"
+    print "min:",min(voltage)
+    print "max:",max(voltage)
+    print "----Current----"
+    print "min:",min(current)
+    print "max:",max(current)
+    ax1.plot(voltage,'r')
+    ax1.set_xlabel("Sample #")
+    ax1.set_ylabel("Voltage")
+    ax2.plot(current,'b')
+    ax2.set_ylabel("Current")
+    ax2.set_ylim(-1.2,1.2)
+    plt.draw()
+
+def getAnalogData(reading):
+    reading = eval(reading)
+    assert(type(reading) == dict)
+    adc0 = []
+    adc4 = []
+    sensorAddr = reading['source_addr'].encode('hex')
+    for sample in reading['samples']:
+        adc0.append(sample['adc-0'])
+        adc4.append(sample['adc-4'])
+
+    return adc0,adc4,sensorAddr
 def normalizeData(voltage,current):
     # Normalize the curve to zero
     # From and more at Adafruit design https://learn.adafruit.com/tweet-a-watt/design-listen
-
     MAINSVPP = 164 * 2 # +-164V
     VREF = 498         # Hardcoded 'DC bias' value its about 492
     CURRENTNORM = 16.0 # Normalizing constant that converts the analog reading to Amperes
-
     min_v = 1024       # XBee ADC is 10 bits, so max value is 1023
     max_v = 0
-
     # Find the smallest voltage and the biggest voltage in the list of samples taken
     for v in voltage:
         if(min_v > v):
             min_v = v
         if(max_v < v):
             max_v = v
-
     # Average of the biggest  and smallest voltage samples
     avg_voltage = (min_v + max_v) / 2
     # Calculate  the peak to peak measurement
     vpp = max_v - min_v
-
     for index in range(len(voltage)):
         # Remove 'dc-bias', which is the average reading
         voltage[index] -= avg_voltage
-
         voltage[index] = (voltage[index] * MAINSVPP) / vpp
-
     # Normalize current reading to amperes
     for index in range(len(current)):
         current[index] -= VREF
@@ -74,39 +96,10 @@ def normalizeData(voltage,current):
     return voltage,current
 def main():
     #filepath = raw_input("Enter name of data file or path where it is located: ")
-    data = open("/home/chronos/data_files/typicalLoadTest/typicalLoadTest-2.txt")
-    plt.ion()
-    fig,ax1 = plt.subplots()
-    ax2 = plt.twinx()
-    for reading in data:
-        reading = reading.strip()
-        adc0 = []
-        adc4 = []
-        ax1.cla()
-        ax2.cla()
-        try:
-            reading = ast.literal_eval(reading)
-            #sensorAddr = reading['source_addr']
-            for sample in reading['samples']:
-                adc0.append(sample['adc-0'])
-                adc4.append(sample['adc-4'])
-            voltage,current = normalizeData(adc0[3:],adc4[3:])
-            print
-            print "----Voltage----"
-            print "min:",min(voltage)
-            print "max:",max(voltage)
-            print "----Current----"
-            print "min:",min(current)
-            print "max:",max(current)
-
-            ax1.plot(voltage,'r')
-            ax1.set_xlabel("Sample #")
-            ax1.set_ylabel("Voltage")
-            ax2.plot(current,'b')
-            ax2.set_ylabel("Current")
-            ax2.set_ylim(-1.2,1.2)
-            sleep(1)
-            plt.draw()
-        except:
-            pass
+    data = open("/home/chronos/data_files/typicalLoadTest/typicalLoadTest.txt")
+    for line in data:
+        adc0, adc4, sensor = getAnalogData(line)
+        volatage, current = normalizeData(adc0,adc4)
+        sleep(5)
+        graphit(volatage,current,sensor)
 main()

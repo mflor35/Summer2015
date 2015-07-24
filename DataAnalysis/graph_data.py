@@ -1,6 +1,7 @@
 #! /usr/bin/env python2.7
 # -*- coding: utf-8 -*-
 import matplotlib.pyplot as plt
+import matplotlib.patches as mpatches
 from time import sleep
 """
 normalizeData takes in analog readings of the  current(adc-4) and the volatage(adc-0).
@@ -37,15 +38,31 @@ modification, are permitted provided that the following conditions are met:
      CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY,
      OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
      OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE."""
+
+
 def updateGraph(current,voltage,graph):
-    graphVoltage = graph.add_subplot(111)
-    graphCurrent = graphVoltage.twinx()
+    """Updates the currenta and voltage values in the specified graph.
+
+    current: List of already normalized current values.
+    [-0.375, 0.0625, 0.375, 0.625, 0.75, 0.625, 0.3125, 0.0, -0.4375, -0.625, -0.75, -0.625, -0.375, 0.0, 0.375, 0.625, 0.75, 0.625, 0.3125]
+
+    voltage: List of already normalize voltage values.
+    [-92, -1, 78, 137, 163, 144, 81, 1, -87, -142, -164, -142, -83, 3, 84, 144, 164, 136, 76]
+
+    graph: Intance of a matplotlib figure object graph = plt.figure()
+
+    """
+    graphVoltage = graph.add_subplot(111) # Add a plot and a subplot to our figure. In this case our main plot is the voltage graph
+    graphCurrent = graphVoltage.twinx()   # Add the current graph as a subplot
     graphVoltage.plot(voltage,'r')
     graphCurrent.plot(current,'b')
+    vLegend = mpatches.Patch(color='red',label='Voltage')
+    cLegend = mpatches.Patch(color='blue',label='Current')
     graphVoltage.set_xlabel("Sample")
     graphVoltage.set_ylabel("Voltage")
     graphCurrent.set_ylabel("Current")
     graphCurrent.set_ylim(-1.2,1.2)
+    graph.legend([vLegend,cLegend],["Voltage","Current"])
     graph.canvas.draw()
     graphCurrent.cla()
     graphVoltage.cla()
@@ -67,11 +84,11 @@ def getAnalogData(reading):
         adc4.append(sample['adc-4'])
 
     return adc0,adc4,sensorAddr
-def normalizeData(voltage,current):
+def normalizeData(voltage,current,sensorVREF):
     # Normalize the curve to zero
     # From and more at Adafruit design https://learn.adafruit.com/tweet-a-watt/design-listen
     MAINSVPP = 164 * 2 # +-164V
-    VREF = 498         # Hardcoded 'DC bias' value its about 492
+    VREF = sensorVREF  # Hardcoded 'DC bias' value its about 492
     CURRENTNORM = 16.0 # Normalizing constant that converts the analog reading to Amperes
     min_v = 1024       # XBee ADC is 10 bits, so max value is 1023
     max_v = 0
@@ -99,9 +116,12 @@ def main():
     data = open("/home/chronos/testData.txt")
     listSensors = []
     listGraphs = []
+    calibratedSensors = [('0001',488),('0002',498)]
     for line in data:
         adc0, adc4, sensorID = getAnalogData(line)
-        voltage, current = normalizeData(adc0,adc4)
+        for sensor in calibratedSensors:
+            if(sensorID == sensor[0]):
+                voltage, current = normalizeData(adc0,adc4,sensor[1])
         if sensorID not in listSensors:
             print "Sensor not in the list. Adding sensor"
             listSensors.append(sensorID)
@@ -113,5 +133,5 @@ def main():
             for graph in listGraphs:
                 if(graph[1] == sensorID):
                     updateGraph(current,voltage,graph[0])
-
-main()
+if __name__ == '__main__':
+    main()

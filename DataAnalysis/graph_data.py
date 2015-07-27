@@ -2,7 +2,6 @@
 # -*- coding: utf-8 -*-
 import matplotlib.pyplot as plt
 import matplotlib.patches as mpatches
-from time import sleep
 from xbee import XBee
 import serial
 """
@@ -112,12 +111,18 @@ def normalizeData(voltage,current,sensorVREF):
     vpp = max_v - min_v
     for index in range(len(voltage)):
         # Remove 'dc-bias', which is the average reading
-        voltage[index] -= avg_voltage
-        voltage[index] = (voltage[index] * MAINSVPP) / vpp
-    # Normalize current reading to amperes
+        try:
+            voltage[index] -= avg_voltage
+            voltage[index] = (voltage[index] * MAINSVPP) / vpp
+            # Normalize current reading to amperes
+        except:
+            pass
     for index in range(len(current)):
-        current[index] -= VREF
-        current[index] /= CURRENTNORM
+        try:
+            current[index] -= VREF
+            current[index] /= CURRENTNORM
+        except:
+            pass
     return voltage,current
 def liveData():
     ser = serial.Serial('/dev/ttyUSB0',9600)
@@ -132,15 +137,15 @@ def liveData():
             adc0, adc4, sensorID = getAnalogData(str(response))
             for sensor in calibratedSensors:
                 if(sensorID == sensor[0]):
-                    voltage, current = normalizeData(adc0[3:],adc4[3:],sensor[1])
+                    voltage, current = normalizeData(adc0[2:],adc4[2:],sensor[1])
                     print
+                    print "Sensor ID:",sensorID
                     print "Voltage"
                     print "Min:",min(voltage)
                     print "Max:",max(voltage)
                     print "Current"
                     print "Min:",min(current)
                     print "Max:",max(current)
-                    print
                     if sensorID not in listSensors:
                         #print "Sensor not in the list. Adding sensor"
                         listSensors.append(sensorID)

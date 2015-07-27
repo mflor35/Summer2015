@@ -70,6 +70,9 @@ def updateGraph(current,voltage,graph):
 
 def createGraph(sensorID):
     """
+    Creates a graph for the specified sensor
+
+    sensorID: XBee address
     """
     plt.ion()
     graph = plt.figure()
@@ -77,21 +80,35 @@ def createGraph(sensorID):
     return graph,sensorID
 
 def getAnalogData(reading):
-    reading = eval(reading)
-    assert(type(reading) == dict)
-    adc0 = []
-    adc4 = []
-    sensorAddr = reading['source_addr'].encode('hex')
-    for sample in reading['samples']:
-        adc0.append(sample['adc-0'])
-        adc4.append(sample['adc-4'])
+    """
+    Parse the reading to just get the analog values and return them.
 
-    return adc0,adc4,sensorAddr
+    reading: A json string that can be evaluated into a dictionary.
+
+    """
+    reading = eval(reading)       # Turn the packet from the sesonr and turn from a string to a dictionary
+    assert(type(reading) == dict) # make sure it is a python dictionary. if it is not break the program
+    adc0 = []                     # List of all adc-0 analog value in the packet (Analog voltage readings)
+    adc4 = []                     # List of all adc-4 analog value in the packet (Analog current readings)
+    sensorAddr = reading['source_addr'].encode('hex') # Which sensor is the packet coming from
+    for sample in reading['samples']: # iterate through each of the anlog samples and put them in their correpoding list
+        adc0.append(sample['adc-0'])  # add all adc-0 values to adc0 list
+        adc4.append(sample['adc-4'])  # add all adc-4 values to adc4 list
+
+        return adc0,adc4,sensorAddr
 def normalizeData(voltage,current,sensorVREF):
+    """
+
+    Turn all the analog data into proper voltage and current values.
+    voltage: The list of analog voltage values from the sensor
+    current: The list of analog current values from the sensor
+    sensorVREF: ADC-4 bias to normalize the curve to zero. varies per sensor.
+
+    """
     # Normalize the curve to zero
     # From and more at Adafruit design https://learn.adafruit.com/tweet-a-watt/design-listen
     MAINSVPP = 164 * 2 # +-164V
-    VREF = sensorVREF  # Hardcoded 'DC bias' value its about 492
+    VREF = sensorVREF  # Varies per sesnsor
     CURRENTNORM = 15.5 # Normalizing constant that converts the analog reading to Amperes
     min_v = 1024       # XBee ADC is 10 bits, so max value is 1023
     max_v = 0
@@ -125,19 +142,26 @@ def normalizeData(voltage,current,sensorVREF):
             pass
     return voltage,current
 def liveData():
-    ser = serial.Serial('/dev/ttyUSB0',9600)
-    xbee = XBee(ser)
-    listSensors = []
-    listGraphs = []
-    calibratedSensors = [('0001',488),('0002',498),('0003',498)]
+    """
+    Get live data from the sensor
+    """
+    ser = serial.Serial('/dev/ttyUSB0',9600) # Serial port to which the reciever is connected
+    xbee = XBee(ser)                         # Xbee object
+    listSensors = []                         # List of all sensor on (keeps track of all the sensors that are on)
+    listGraphs = []                          # List of all the graph (Keeps track of all the graphs being displayed)
+    calibratedSensors = [('0001',488),('0002',498),('0003',498)] # list of all calibrated sensor and their respective VREF value (ADC-4 bias)
+
     while True:
         try:
-            response = xbee.wait_read_frame()
+            response = xbee.wait_read_frame() # get reading
             #response = eval(response)
-            adc0, adc4, sensorID = getAnalogData(str(response))
-            for sensor in calibratedSensors:
-                if(sensorID == sensor[0]):
-                    voltage, current = normalizeData(adc0[2:],adc4[2:],sensor[1])
+            adc0, adc4, sensorID = getAnalogData(str(response)) # get the anolog information for each of the readings
+            for sensor in calibratedSensors:                    # get calibration information for each of the sensors
+                if(sensorID == sensor[0]):                      # If calibration information is not there, we need to run calibration script
+                                                                #https://github.com/mflor35/Summer2015/blob/master/Calibrating_Sensors.md
+
+                    voltage, current = normalizeData(adc0[2:],adc4[2:],sensor[1]) # turn analog data into actual voltage and current. discard first 2 analog readings from adc-0 and adc-4
+                    # Debuggin porpuses
                     print
                     print "Sensor ID:",sensorID
                     print "Voltage"
@@ -146,10 +170,12 @@ def liveData():
                     print "Current"
                     print "Min:",min(current)
                     print "Max:",max(current)
+
+                    # keeping track of the sensor that are already being graphed
                     if sensorID not in listSensors:
                         #print "Sensor not in the list. Adding sensor"
                         listSensors.append(sensorID)
-                        graph,graphID = createGraph(sensorID)
+                        graph,graphID = createGraph(sensorID) # Create a graph for all the sensor that do have a graph yet
                         listGraphs.append((graph,sensorID))
                     else:
                         # print "Sensor Already in list. Should be updating graph"
@@ -158,7 +184,8 @@ def liveData():
                                 updateGraph(current,voltage,graph[0])
         except KeyboardInterrupt:
             break
-    ser.close()
+    ser.close() # liberate the serial port!
+
 def main():
     #filepath = raw_input("Enter name of data file or path where it is located: ")
     """
@@ -191,6 +218,6 @@ def main():
                 if(graph[1] == sensorID):
                     updateGraph(current,voltage,graph[0])
     """
-    liveData()
+    liveData() # Graphing data live
 if __name__ == '__main__':
     main()

@@ -1,6 +1,6 @@
 import numpy as np
 calibrationData = []
-fileName = open("/home/chronos/Documents/Summer2015/Internship/Code/Summer2015/WirelessCommunication/tweetawatt3.txt")
+fileName = open("/home/chronos/Documents/Summer2015/Internship/Code/Summer2015/WirelessCommunication/Noisy_Zeros3.txt")
 #sensorData = open("home/chronos/data_files/vrefs.txt",'w')
 
 for line in fileName:

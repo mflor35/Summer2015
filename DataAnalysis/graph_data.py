@@ -4,6 +4,8 @@ import matplotlib.pyplot as plt
 import matplotlib.patches as mpatches
 from xbee import XBee
 import serial
+import numpy as np
+COUNTER = 0
 """
 normalizeData takes in analog readings of the  current(adc-4) and the volatage(adc-0).
 It also takes in the sensorAddr(source_addr) simply to keep track where is the data comming from
@@ -95,8 +97,16 @@ def getAnalogData(reading):
         adc0.append(sample['adc-0'])  # add all adc-0 values to adc0 list
         adc4.append(sample['adc-4'])  # add all adc-4 values to adc4 list
 
-        return adc0,adc4,sensorAddr
+    return adc0,adc4,sensorAddr
 def normalizeData(voltage,current,sensorVREF):
+    COUNTER = COUNTER + 1
+    if(COUNTER == 5):
+        sensorVREF = np.mean(current)
+        COUNTER = 0
+
+
+    print "AVG ADC4", np.mean(current)
+    print "VREF",sensorVREF
     """
 
     Turn all the analog data into proper voltage and current values.
@@ -149,7 +159,7 @@ def liveData():
     xbee = XBee(ser)                         # Xbee object
     listSensors = []                         # List of all sensor on (keeps track of all the sensors that are on)
     listGraphs = []                          # List of all the graph (Keeps track of all the graphs being displayed)
-    calibratedSensors = [('0001',488),('0002',498),('0003',498)] # list of all calibrated sensor and their respective VREF value (ADC-4 bias)
+    calibratedSensors = [('0001',488),('0002',498),('0003',496),('0004',494.5)] # list of all calibrated sensor and their respective VREF value (ADC-4 bias)
 
     while True:
         try:
@@ -159,8 +169,7 @@ def liveData():
             for sensor in calibratedSensors:                    # get calibration information for each of the sensors
                 if(sensorID == sensor[0]):                      # If calibration information is not there, we need to run calibration script
                                                                 #https://github.com/mflor35/Summer2015/blob/master/Calibrating_Sensors.md
-
-                    voltage, current = normalizeData(adc0[2:],adc4[2:],sensor[1]) # turn analog data into actual voltage and current. discard first 2 analog readings from adc-0 and adc-4
+                    voltage, current = normalizeData(adc0[2:],adc4[2:],sensor[1]) # turn analog data into actual voltage and current. discard first 2 analog readings from adc-0 and adc-4\
                     # Debuggin porpuses
                     print
                     print "Sensor ID:",sensorID
@@ -170,7 +179,6 @@ def liveData():
                     print "Current"
                     print "Min:",min(current)
                     print "Max:",max(current)
-
                     # keeping track of the sensor that are already being graphed
                     if sensorID not in listSensors:
                         #print "Sensor not in the list. Adding sensor"

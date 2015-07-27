@@ -4,9 +4,9 @@ All libraries and versions used can be put under revision control among
 other benefits.
 
 ## To initialize
-1. - Install __python-virtualenv__ (fedora package name, ymmv)
+1. Install __python-virtualenv__ (fedora package name, ymmv)
 
-2. - run
+2. run
 ```make venv```
 The virtual environment will be installed in the the
 same directory as the makefile under the directory name __*venv*__ and pip

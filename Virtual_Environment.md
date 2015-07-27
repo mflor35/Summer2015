@@ -1,11 +1,16 @@
+## Python Virtual Environment
+
 All libraries and versions used can be put under revision control among
 other benefits.
 
-To initialize:
-1. install python-virtualenv (fedora package name, ymmv)
-2. run "make venv" the virtual environment will be installed in the the
+__To initialize:__
+1. - install _python-virtualenv_ (fedora package name, ymmv)
+
+2. run
+```make venv"```
+the virtual environment will be installed in the the
 same directory as the makefile under the directory name 'venv' and pip
-will install all packages listed under requirements.txt
+will install all packages listed under _requirements.txt_
 
 To remove the venv directory:
 A. run "make clobber"
@@ -14,7 +19,7 @@ B. run "rm -rf venv"
 A is preferred, for prevention of fatfingering the wrong files while
 typing the 'rm' command
 
-To install new libaries:
+To install new libraries:
 1. search for it using "venv/bin/pip"
 2. install it using "venv/bin/pip"
 3. update requirements.txt by running

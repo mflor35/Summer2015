@@ -2,10 +2,11 @@
 # -*- coding: utf-8 -*-
 import matplotlib.pyplot as plt
 import matplotlib.patches as mpatches
+from datetime import datetime
 from xbee import XBee
 import serial
 import numpy as np
-COUNTER = 0
+#COUNTER = 0
 """
 normalizeData takes in analog readings of the  current(adc-4) and the volatage(adc-0).
 It also takes in the sensorAddr(source_addr) simply to keep track where is the data comming from
@@ -42,6 +43,21 @@ modification, are permitted provided that the following conditions are met:
      OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
      OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE."""
 
+def getSensorReading(serialPort):
+    """
+    Read data from sensor.
+
+    serial_port: A string with the port number where the xbee reciever is connected
+    for windows system is something like 'COM3','COM4'.. etc
+    for Linux/Unix systems should be something lik '/dev/ttyUSB0', '/dev/ttyUSB1' ...etc
+
+    """
+    ser = serial.Serial(serialPort,9600) # Serial port to which the reciever is connected
+    xbee = XBee(ser)                         # Xbee object
+    response = xbee.wait_read_frame() # get reading
+    response['timestamp'] = datetime.now()
+    ser.close()
+    return response
 
 def updateGraph(current,voltage,graph):
     """Updates the currenta and voltage values in the specified graph.
@@ -88,8 +104,7 @@ def getAnalogData(reading):
     reading: A json string that can be evaluated into a dictionary.
 
     """
-    reading = eval(reading)       # Turn the packet from the sesonr and turn from a string to a dictionary
-    assert(type(reading) == dict) # make sure it is a python dictionary. if it is not break the program
+    # make sure it is a python dictionary. if it is not break the program
     adc0 = []                     # List of all adc-0 analog value in the packet (Analog voltage readings)
     adc4 = []                     # List of all adc-4 analog value in the packet (Analog current readings)
     sensorAddr = reading['source_addr'].encode('hex') # Which sensor is the packet coming from
@@ -99,16 +114,7 @@ def getAnalogData(reading):
 
     return adc0,adc4,sensorAddr
 def normalizeData(voltage,current,sensorVREF):
-    COUNTER = COUNTER + 1
-    if(COUNTER == 5):
-        sensorVREF = np.mean(current)
-        COUNTER = 0
-
-
-    print "AVG ADC4", np.mean(current)
-    print "VREF",sensorVREF
     """
-
     Turn all the analog data into proper voltage and current values.
     voltage: The list of analog voltage values from the sensor
     current: The list of analog current values from the sensor
@@ -130,10 +136,6 @@ def normalizeData(voltage,current,sensorVREF):
             max_v = v
     # Average of the biggest  and smallest voltage samples
     avg_voltage = (min_v + max_v) / 2
-    print "Average Voltage"
-    print avg_voltage
-    print
-
     # Calculate  the peak to peak measurement
     vpp = max_v - min_v
     for index in range(len(voltage)):
@@ -155,77 +157,53 @@ def liveData():
     """
     Get live data from the sensor
     """
-    ser = serial.Serial('/dev/ttyUSB0',9600) # Serial port to which the reciever is connected
-    xbee = XBee(ser)                         # Xbee object
-    listSensors = []                         # List of all sensor on (keeps track of all the sensors that are on)
-    listGraphs = []                          # List of all the graph (Keeps track of all the graphs being displayed)
-    calibratedSensors = [('0001',488),('0002',498),('0003',496),('0004',494.5)] # list of all calibrated sensor and their respective VREF value (ADC-4 bias)
-
+    listGraphs = []
+    sensorsConnected = []# List of all the graph (Keeps track of all the graphs being displayed)
+    calibratedSensors = []
+    calibrationInfo = []
     while True:
         try:
-            response = xbee.wait_read_frame() # get reading
-            #response = eval(response)
-            adc0, adc4, sensorID = getAnalogData(str(response)) # get the anolog information for each of the readings
-            for sensor in calibratedSensors:                    # get calibration information for each of the sensors
-                if(sensorID == sensor[0]):                      # If calibration information is not there, we need to run calibration script
-                                                                #https://github.com/mflor35/Summer2015/blob/master/Calibrating_Sensors.md
-                    voltage, current = normalizeData(adc0[2:],adc4[2:],sensor[1]) # turn analog data into actual voltage and current. discard first 2 analog readings from adc-0 and adc-4\
-                    # Debuggin porpuses
-                    print
-                    print "Sensor ID:",sensorID
-                    print "Voltage"
-                    print "Min:",min(voltage)
-                    print "Max:",max(voltage)
-                    print "Current"
-                    print "Min:",min(current)
-                    print "Max:",max(current)
-                    # keeping track of the sensor that are already being graphed
-                    if sensorID not in listSensors:
-                        #print "Sensor not in the list. Adding sensor"
-                        listSensors.append(sensorID)
-                        graph,graphID = createGraph(sensorID) # Create a graph for all the sensor that do have a graph yet
-                        listGraphs.append((graph,sensorID))
-                    else:
-                        # print "Sensor Already in list. Should be updating graph"
-                        for graph in listGraphs:
-                            if(graph[1] == sensorID):
-                                updateGraph(current,voltage,graph[0])
+            reading = getSensorReading('/dev/ttyUSB0')
+            adc0, adc4, id = getAnalogData(reading)
+            sensorInfo = [id,reading['timestamp'],[]]
+            if sensorInfo[0] not in sensorsConnected:
+                print "Adding sensor: " + sensorInfo[0]
+                sensorsConnected.append(sensorInfo[0])
+                calibrationInfo.append(sensorInfo)
+                graph,graphID = createGraph(sensorInfo[0]) # Create a graph for all the sensor that do have a graph yet
+                listGraphs.append((graph,sensorInfo[0]))
+            if sensorInfo[0] not in calibratedSensors:
+                for sensor in calibrationInfo:
+                    if(sensor[0] == sensorInfo[0]):
+                        elapsedTime = int((datetime.now() - sensor[1]).total_seconds())
+                        if(elapsedTime <= 60):
+                            print "Time current - added: ", elapsedTime
+                            print "Calibrating..."
+                            sensor[2] += adc4
+                        else:
+                            calibratedSensors.append(sensorInfo[0])
+            else:
+                print id + " Sensor already calibrated"
+                for sensor in calibrationInfo:
+                    sensor[2] = int(np.mean(sensor[2]))
+                    if(id == sensor[0]):
+                        voltage, current = normalizeData(adc0[2:],adc4[2:],sensor[2]) # turn analog data into actual voltage and current. discard first 2 analog readings from adc-0 and adc-4\
+                        # Debuggin porpuses
+                        print
+                        print "Sensor ID:", id
+                        print "Voltage"
+                        print "Min:",min(voltage)
+                        print "Max:",max(voltage)
+                        print "Current"
+                        print "Min:",min(current)
+                        print "Max:",max(current)
+                for graph in listGraphs:
+                    if(graph[1] == id):
+                        updateGraph(current,voltage,graph[0])
         except KeyboardInterrupt:
             break
-    ser.close() # liberate the serial port!
-
 def main():
-    #filepath = raw_input("Enter name of data file or path where it is located: ")
-    """
-    data = open("/home/chronos/Documents/Summer2015/Internship/Code/Summer2015/WirelessCommunication/tweetawatt3.txt")
-    listSensors = []
-    listGraphs = []
-    calibratedSensors = [('0001',488),('0002',498),('0003',498)]
-    for line in data:
-        adc0, adc4, sensorID = getAnalogData(line)
-        for sensor in calibratedSensors:
-            if(sensorID == sensor[0]):
-                voltage, current = normalizeData(adc0[3:],adc4[3:],sensor[1])
-                print
-                print "Voltage"
-                print "Min:",min(voltage)
-                print "Max:",max(voltage)
-                print "Current"
-                print "Min:",min(current)
-                print "Max:",max(current)
-                print
-        if sensorID not in listSensors:
-            #print "Sensor not in the list. Adding sensor"
-            listSensors.append(sensorID)
-            graph,graphID = createGraph(sensorID)
-            listGraphs.append((graph,sensorID))
-        else:
-            sleep(2)
-           # print "Sensor Already in list. Should be updating graph"
-            for graph in listGraphs:
-                if(graph[1] == sensorID):
-                    updateGraph(current,voltage,graph[0])
-    """
+
     liveData() # Graphing data live
 if __name__ == '__main__':
     main()

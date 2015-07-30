@@ -177,7 +177,7 @@ def liveData():
                     if(sensor[0] == sensorInfo[0]):
                         elapsedTime = int((datetime.now() - sensor[1]).total_seconds())
                         if(elapsedTime <= 60):
-                            print "Time current - added: ", elapsedTime
+                            print "Time elapsed ", elapsedTime
                             print "Calibrating..."
                             sensor[2] += adc4
                         else:

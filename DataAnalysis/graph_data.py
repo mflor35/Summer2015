@@ -118,7 +118,7 @@ def normalizeData(voltage,current,sensorVREF):
     Turn all the analog data into proper voltage and current values.
     voltage: The list of analog voltage values from the sensor
     current: The list of analog current values from the sensor
-    sensorVREF: ADC-4 bias to normalize the curve to zero. varies per sensor.
+    sensorVREF: ADC-4 bias to normalize the curve to zero. varies per sensor. Get it from calibrating sensor
 
     """
     # Normalize the curve to zero
@@ -159,51 +159,57 @@ def liveData():
     """
     listGraphs = []
     sensorsConnected = []# List of all the graph (Keeps track of all the graphs being displayed)
-    calibratedSensors = []
-    calibrationInfo = []
+    calibratedSensors = []# keep track of the sensors connected 
+    calibrationInfo = []# information needed to calibrate each of the sensors
+    VREF = 0
+    voltage = 0
+    current = 0
     while True:
         try:
-            reading = getSensorReading('/dev/ttyUSB0')
-            adc0, adc4, id = getAnalogData(reading)
-            sensorInfo = [id,reading['timestamp'],[]]
-            if sensorInfo[0] not in sensorsConnected:
-                print "Adding sensor: " + sensorInfo[0]
-                sensorsConnected.append(sensorInfo[0])
-                calibrationInfo.append(sensorInfo)
-                graph,graphID = createGraph(sensorInfo[0]) # Create a graph for all the sensor that do have a graph yet
-                listGraphs.append((graph,sensorInfo[0]))
-            if sensorInfo[0] not in calibratedSensors:
+            reading = getSensorReading('/dev/ttyUSB0') # Connect to the reciever through USB serial
+            adc0, adc4, id = getAnalogData(reading) # Extract analog samples from the reading
+            sensorInfo = [id,reading['timestamp'],[]] # bundle information about sensor per reading
+            if(id  not in sensorsConnected): # check that sensor is already connected
+                print "Adding sensor: " + id
+                sensorsConnected.append(id) # keeping track of the sensors that are connected
+                calibrationInfo.append(sensorInfo) # 
+                graph,graphID = createGraph(id) # Create a graph for all the sensor that do have a graph yet
+                listGraphs.append((graph,graphID))
+            if (id not in calibratedSensors):
+               # print calibrationInfo
                 for sensor in calibrationInfo:
-                    if(sensor[0] == sensorInfo[0]):
-                        elapsedTime = int((datetime.now() - sensor[1]).total_seconds())
-                        if(elapsedTime <= 60):
-                            print "Time elapsed ", elapsedTime
-                            print "Calibrating..."
-                            sensor[2] += adc4
-                        else:
-                            calibratedSensors.append(sensorInfo[0])
+                    elapsedTime = int((datetime.now() - sensor[1]).total_seconds())
+                    if(sensor[0] == id):
+                       if(elapsedTime <= 60):
+                           print "Time elapsed ", elapsedTime
+                           print "Calibrating...",id
+                           sensor[2] += adc4
+                       else:
+                           calibratedSensors.append(sensor[0])
             else:
-                print id + " Sensor already calibrated"
-                for sensor in calibrationInfo:
-                    sensor[2] = int(np.mean(sensor[2]))
+                #print id + " Sensor already calibrated"
+                for i in range(len(sensorsConnected)):
+                    sensor = calibrationInfo[i]
                     if(id == sensor[0]):
-                        voltage, current = normalizeData(adc0[2:],adc4[2:],sensor[2]) # turn analog data into actual voltage and current. discard first 2 analog readings from adc-0 and adc-4\
+                        VREF = int(np.mean(sensor[2]))
+                        voltage, current = normalizeData(adc0[2:],adc4[2:],VREF) # turn analog data into actual voltage and current. discard first 2 analog readings from adc-0 and adc-4
+                        updateGraph(current, voltage, listGraphs[i][0])
+                        print id, VREF
                         # Debuggin porpuses
-                        print
-                        print "Sensor ID:", id
-                        print "Voltage"
-                        print "Min:",min(voltage)
-                        print "Max:",max(voltage)
-                        print "Current"
-                        print "Min:",min(current)
-                        print "Max:",max(current)
-                for graph in listGraphs:
-                    if(graph[1] == id):
-                        updateGraph(current,voltage,graph[0])
+                       # print
+                       # print "Sensor ID:", id
+                       # print "Voltage"
+                       # print "Min:",min(voltage)
+                       # print "Max:",max(voltage)
+                       # print "Current"
+                       # print "Min:",min(current)
+                       # print "Max:",max(current)
+                       # print "VREF: ", VREF
+            #print calibratedSensors
+            #print calibrationInfo
         except KeyboardInterrupt:
             break
 def main():
-
     liveData() # Graphing data live
 if __name__ == '__main__':
     main()

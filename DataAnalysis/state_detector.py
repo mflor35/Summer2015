@@ -37,14 +37,14 @@ modification, are permitted provided that the following conditions are met:
      CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY,
      OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
      OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE."""
-
+import ast
 DELTA_OFF = 15
 DELTA_ON  = 30
 METER_ADDRESS = '\x00\x01'
 
 with open('data_sample/rawdata2.txt', 'r') as inp:
     for line in inp:
-        d = eval(line) #raw data is python dictionaries written out as strings, this converts to a dictionary
+        d = ast.literal_eval(line) #raw data is python dictionaries written out as strings, this converts to a dictionary
         if d['source_addr'] == METER_ADDRESS:
             s = str(d['timestamp'])+', '
             samples = [x['adc-4'] for x in d['samples']]

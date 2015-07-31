@@ -2,8 +2,9 @@
 This program takes the output from the state_analysis.py file and creates a graph of all 5 days with several different colors.
 '''
 import matplotlib.pyplot as plt
+import ast
 datafile = open('state_analysis.txt', 'r')
-data_list = eval(datafile.readline())
+data_list = ast.literal_eval(datafile.readline())
 x_numbers = []
 x_date = []
 y_timeon = []

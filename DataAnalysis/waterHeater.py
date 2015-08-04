@@ -4,6 +4,7 @@ import matplotlib.patches as mpatches
 from xbee import XBee
 import serial
 from datetime import datetime
+
 def getSensorReading(serialPort):
     """
     Read data from sensor.
@@ -115,7 +116,7 @@ def main():
     while choice != 0:
         if(choice == 5):
             while True:
-                sleep(30)
+                sleep(5)
                 ser.flush()
                 try:
                     Send(ser,"Temp!")

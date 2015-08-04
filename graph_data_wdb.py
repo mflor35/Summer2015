@@ -6,6 +6,8 @@ from datetime import datetime
 from xbee import XBee
 import serial
 import numpy as np
+import sqlite3
+import os
 #COUNTER = 0
 """
 normalizeData takes in analog readings of the  current(adc-4) and the volatage(adc-0).
@@ -42,6 +44,26 @@ modification, are permitted provided that the following conditions are met:
      CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY,
      OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
      OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE."""
+def createTable(dbName):
+    connection = sqlite3.connect(dbName)
+    connection.execute("CREATE TABLE sensor_data(id real,date text,adc0 real, adc4 real)")
+    connection.commit()
+    print "Database created"
+
+def connectToDB(dbName):
+    createTable(dbName)
+    try:
+        connection = sqlite3.connect(dbName)
+        print "Connected to database"
+
+    except:
+        print "Problems connecting to the database"
+    return connection
+
+def pushToDB(conection,id,date,adc0,adc4):
+    values = (id,date,adc0,adc4)
+    conection.execute("INSERT INTO sensor_data VALUES(?,?,?,?);".format(values),values)
+    conection.commit()
 
 def getSensorReading(serialPort):
     """
@@ -113,6 +135,7 @@ def getAnalogData(reading):
         adc4.append(sample['adc-4'])  # add all adc-4 values to adc4 list
 
     return adc0,adc4,sensorAddr
+
 def normalizeData(voltage,current,sensorVREF):
     """
     Turn all the analog data into proper voltage and current values.
@@ -153,62 +176,47 @@ def normalizeData(voltage,current,sensorVREF):
         except:
             pass
     return voltage,current
+
+def numberSamples(connection,id):
+    c = connection.cursor()
+    return len(list(c.execute("SELECT * FROM sensor_data WHERE id=?",(id,))))
+
+def calcVREF(connection,id):
+    c = connection.cursor()
+    adc4s = list(c.execute("SELECT adc4 FROM sensor_data WHERE id=?",(id,)))
+    return int(np.mean(adc4s))
+
 def liveData():
     """
     Get live data from the sensor
     """
     listGraphs = []
     sensorsConnected = []# List of all the graph (Keeps track of all the graphs being displayed)
-    calibratedSensors = []# keep track of the sensors connected
-    calibrationInfo = []# information needed to calibrate each of the sensors
-    VREF = 0
-    voltage = 0
-    current = 0
+    dbConnection = connectToDB("Sensors.db")
     while True:
         try:
             reading = getSensorReading('/dev/ttyUSB0') # Connect to the reciever through USB serial
-            print reading
             adc0, adc4, id = getAnalogData(reading) # Extract analog samples from the reading
-            sensorInfo = [id,reading['timestamp'],[]] # bundle information about sensor per reading
+            timestamp = reading['timestamp']
+            print reading
             if(id  not in sensorsConnected): # check that sensor is already connected
+                timestamp = reading['timestamp']
                 print "Adding sensor: " + id
                 sensorsConnected.append(id) # keeping track of the sensors that are connected
-                calibrationInfo.append(sensorInfo) #
                 graph,graphID = createGraph(id) # Create a graph for all the sensor that do have a graph yet
                 listGraphs.append((graph,graphID))
-            if (id not in calibratedSensors):
-               # print calibrationInfo
-                for sensor in calibrationInfo:
-                    elapsedTime = int((datetime.now() - sensor[1]).total_seconds())
-                    if(sensor[0] == id):
-                       if(elapsedTime <= 60):
-                           print "Time elapsed ", elapsedTime
-                           print "Calibrating...",id
-                           sensor[2] += adc4
-                       else:
-                           calibratedSensors.append(sensor[0])
+            if numberSamples(dbConnection,id) < 30:
+                pushToDB(dbConnection, int(id),str(timestamp),np.mean(adc0),np.mean(adc4))
+                print id,"Calibrating ...."
             else:
-                #print id + " Sensor already calibrated"
-                for i in range(len(sensorsConnected)):
-                    sensor = calibrationInfo[i]
-                    if(id == sensor[0]):
-                        VREF = int(np.mean(sensor[2]))
-                        voltage, current = normalizeData(adc0[2:],adc4[2:],VREF) # turn analog data into actual voltage and current. discard first 2 analog readings from adc-0 and adc-4
-                        updateGraph(current, voltage, listGraphs[i][0])
-                        print id, VREF
-                        # Debuggin porpuses
-                       # print
-                       # print "Sensor ID:", id
-                       # print "Voltage"
-                       # print "Min:",min(voltage)
-                       # print "Max:",max(voltage)
-                       # print "Current"
-                       # print "Min:",min(current)
-                       # print "Max:",max(current)
-                       # print "VREF: ", VREF
-            #print calibratedSensors
-            #print calibrationInfo
+                print "Sensor Calibrated"
+                print id, calcVREF(dbConnection,id)
+                voltage, current = normalizeData(adc0[2:],adc4[2:],calcVREF(dbConnection,id))
+                for graph in listGraphs:
+                    if(graph[1] == id):
+                        updateGraph(current,voltage,graph[0])
         except KeyboardInterrupt:
+            os.remove('Sensors.db')
             break
 def main():
     liveData() # Graphing data live

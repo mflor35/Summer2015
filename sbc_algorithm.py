@@ -1,19 +1,31 @@
 import serial
 from time import sleep
-def getFrequency():
+def getFrequency(serialPort):
         print "Connected to serial"
-        ser = serial.Serial('/dev/ttyACM0',9600)
-        while True:
-                try:
-                        sleep(2)
-                        ser.write('Freq!')
-                        print float(ser.readline())
-                except KeyboardInterrupt:
-                        break
+        ser = serial.Serial(serialPort,9600)
+        reading = float(ser.readline())
 
-
+        return reading
 def main():
-        getFrequency()
+        freqReadings = []
+        sleepTime = 5
+        # Load configuration
+        avgFreq = 0
+        while len(freqReadings) < 72:
+                sleep(sleepTime)
+                freq = getFrequency('/dev/ttyACM0')
+                freqReadings.append(freq)
+
+        for i in range(len(freqReadings)):
+                avgFreq += freqReadings[i]
+                sleep(sleepTime)
+                freq =  getFrequency
+                freqReadings[i] = freq
+
+        avgFreq = avgFreq/len(freqReadings)
+
+
+
 main()
 
 

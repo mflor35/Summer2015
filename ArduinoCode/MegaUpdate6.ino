@@ -25,8 +25,8 @@ double temperature;//
 String package;
 float SetPoint=20;//Temperature setpoint defualt set to 20
 
-int deviationup = 2;//Temperature minimum deviation
-int deviationdown = 2;//Temperature maximum deviation
+int deviationup = 0;//Temperature minimum deviation
+int deviationdown = 10;//Temperature maximum deviation
 byte addr[8];//Holds the identification information of the temperature sensor.
 //-----------------------------------------------------
   

@@ -2,10 +2,15 @@ import matplotlib.pyplot as plt
 from time import sleep
 import matplotlib.patches as mpatches
 from xbee import XBee
+from xbee.base import TimeoutException
 import serial
 from datetime import datetime
 
-def getSensorReading(serialPort):
+TIMEOUT=2
+MEASUREMENT_PERIOD=5
+DATAFILE="waterHeaterTemp.csv"
+
+def getSensorReading(xbee):
     """
     Read data from sensor.
     TODO: SerialPort is an object
@@ -15,8 +20,7 @@ def getSensorReading(serialPort):
     for Linux/Unix systems should be something lik '/dev/ttyUSB0', '/dev/ttyUSB1' ...etc
 
     """
-    xbee = XBee(serialPort)             # Xbee object
-    response = xbee.wait_read_frame()   # get reading
+    response = xbee.wait_read_frame(timeout=1)   # get reading
     response['timestamp'] = datetime.now()
     return response
 
@@ -106,37 +110,55 @@ def menu():
     print"2.- OFF"
     print"3.- Status"
     print"4.- Set temperature offset"
-    print"5.- Show temperature graph"
+    print"5.- Collect Temperature Data"
     print"0.- Exit"
 
 def main():
     ser = serial.Serial('/dev/ttyUSB0',9600)
+    Send(ser, 'Status!')
+    xbee = XBee(ser)             # Xbee object
+    reading = getSensorReading(xbee)
+    print reading
+    ser.timeout=TIMEOUT
     menu()
     choice = int(raw_input("Enter a option: "))
     while choice != 0:
         if(choice == 5):
-            while True:
-                sleep(5)
-                ser.flush()
+            #open data file for writing
+            with open(DATAFILE, 'w', buffering=1) as df:
                 try:
-                    Send(ser,"Temp!")
-                    reading = getSensorReading(ser)
-                    print reading['rf_data']
+                    while True:
+                        ser.flush()
+                        Send(ser,"Temp!")
+                        while True:
+                            try:
+                                reading = getSensorReading(xbee)
+                            except TimeoutException:
+                                print "Timeout Occured"
+                                Send(ser, "Temp!")
+                            else:
+                                break
+                        print reading['rf_data']
+                        #write to file
+                        r=reading['rf_data'].replace("TEMPERATURE: ", "")
+                        r=float(r.replace(" C\r\n",""))
+                        df.write("{ts}, {temp}\n".format(ts=str(reading['timestamp']), temp=r))
+                        sleep(MEASUREMENT_PERIOD)
                 except KeyboardInterrupt:
-                    break
+                    reading=""
         elif(choice == 1 ):
             Send(ser,"ON!")
-            reading = getSensorReading(ser)
+            reading = getSensorReading(xbee)
         elif(choice == 2):
             Send(ser,"OFF!")
-            reading = getSensorReading(ser)
+            reading = getSensorReading(xbee)
         elif(choice == 3):
             Send(ser,"Status!")
-            reading = getSensorReading(ser)
+            reading = getSensorReading(xbee)
         elif(choice == 4):
             offset = int(raw_input("Enter new temperature offset: "))
             Send(ser,"SetPoint: "+str(offset)+"!")
-            reading = getSensorReading(ser)
+            reading = getSensorReading(xbee)
         print reading
         menu()
         choice = int(raw_input("Enter a option: "))

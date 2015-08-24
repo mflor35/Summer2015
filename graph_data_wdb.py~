@@ -194,7 +194,7 @@ def liveData():
     listGraphs = []
     sensorsConnected = []# List of all the graph (Keeps track of all the graphs being displayed)
     dbConnection = connectToDB("Sensors.db")
-    vrefs = [486,498,0,494]
+    vrefs = [486,498,0,496]
     while True:
         try:
             reading = getSensorReading('/dev/ttyUSB0') # Connect to the reciever through USB serial
